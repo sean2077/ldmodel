@@ -4,8 +4,9 @@
 import time
 from typing import List
 
-from ldmodel import LDModel
 from pydantic import BaseModel
+
+from ldmodel import LDModel
 
 
 def timeit(f, call_times_cache={}):

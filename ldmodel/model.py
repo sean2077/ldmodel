@@ -30,7 +30,7 @@ def is_jsonable(x):
 
 
 class LoadModel:
-    __ldmodel_udl = {}  # user defined loader
+    ldmodel_udl = {}  # user defined loader
 
     @staticmethod
     def _load(type_, name, value, cls, **kwargs) -> Any:
@@ -45,8 +45,8 @@ class LoadModel:
             if value is None:
                 return type_()  # default value of type
 
-            if type_ in cls.__ldmodel_udl:
-                f = cls.__ldmodel_udl.get(type_)
+            if type_ in cls.ldmodel_udl:
+                f = cls.ldmodel_udl.get(type_)
                 return f(value, **kwargs)
 
             if issubclass(type_, LoadModel):
@@ -103,26 +103,26 @@ class LoadModel:
 
 
 class DumpModel:
-    __ldmodel_udd = {}  # user defined dumper
+    ldmodel_udd = {}  # user defined dumper
 
     def _dump(self, value, **kwargs):
 
-        if type(value) in self.__ldmodel_udd:
-            f = self.__ldmodel_udd.get(type(value))
+        if type(value) in self.ldmodel_udd:
+            f = self.ldmodel_udd.get(type(value))
             return f(value, **kwargs)
 
         if isinstance(value, DumpModel):
             return value.to_dict(**kwargs)
 
-        if isinstance(value, list):
+        if isinstance(value, (list, List)):
             return [self._dump(i, **kwargs) for i in value]
 
-        if isinstance(value, dict):
+        if isinstance(value, (dict, Dict)):
             # 过滤`__`前缀的变量和无法json序列化的成员
             return {
                 k: self._dump(v, **kwargs)
                 for k, v in value.items()
-                if not k.startswith("__")
+                if not k.startswith("__") or not k.startswith("ldmodel")
             }
 
         # 过滤无法json序列化的成员
