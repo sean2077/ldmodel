@@ -30,7 +30,7 @@ def is_jsonable(x):
 
 
 class LoadModel:
-    __udf_handlers = {}
+    __ldmodel_udl = {}  # user defined loader
 
     @staticmethod
     def _load(type_, name, value, cls, **kwargs) -> Any:
@@ -45,8 +45,8 @@ class LoadModel:
             if value is None:
                 return type_()  # default value of type
 
-            if type_ in cls.udf_type_handlers:
-                f = cls.udf_type_handlers.get(type_)
+            if type_ in cls.__ldmodel_udl:
+                f = cls.__ldmodel_udl.get(type_)
                 return f(value, **kwargs)
 
             if issubclass(type_, LoadModel):
@@ -103,19 +103,24 @@ class LoadModel:
 
 
 class DumpModel:
-    @staticmethod
-    def _dump(value, **kwargs):
+    __ldmodel_udd = {}  # user defined dumper
+
+    def _dump(self, value, **kwargs):
+
+        if type(value) in self.__ldmodel_udd:
+            f = self.__ldmodel_udd.get(type(value))
+            return f(value, **kwargs)
 
         if isinstance(value, DumpModel):
             return value.to_dict(**kwargs)
 
         if isinstance(value, list):
-            return [DumpModel._dump(i, **kwargs) for i in value]
+            return [self._dump(i, **kwargs) for i in value]
 
         if isinstance(value, dict):
             # 过滤`__`前缀的变量和无法json序列化的成员
             return {
-                k: DumpModel._dump(v, **kwargs)
+                k: self._dump(v, **kwargs)
                 for k, v in value.items()
                 if not k.startswith("__")
             }
@@ -127,7 +132,7 @@ class DumpModel:
         return None
 
     def to_dict(self, **kwargs) -> dict:
-        return DumpModel._dump(self.__dict__, **kwargs)
+        return self._dump(self.__dict__, **kwargs)
 
     def to_json(self, **kwargs) -> str:
         return json.dumps(self.to_dict(**kwargs))
